@@ -1,100 +1,85 @@
-# vinext-starter
+# Helping Hands — MERN
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+Helping Hands is a JavaScript-only MERN application that connects free item donations with community-reviewed needs.
 
-## Prerequisites
+## Requirements
 
-- Node.js `>=22.13.0`
+- Node.js 20+
+- MongoDB running locally or a MongoDB Atlas connection
 
-## Quick Start
+## Setup
+
+1. Install all workspace dependencies:
+
+   ```bash
+   npm install
+   ```
+
+2. Create `server/.env` from `server/.env.example` and replace `JWT_SECRET` with a long random value.
+3. Optionally create `client/.env` from `client/.env.example` when the API is not running at `http://localhost:8000/api`.
+
+## Run
+
+Start both apps:
 
 ```bash
-npm install
 npm run dev
-npm run build
 ```
 
-This starter does not use `wrangler.jsonc`.
+Or run them separately:
 
-## Included Shape
-
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
-
-## Workspace Auth Headers
-
-Signed-in visitors receive both `oai-authenticated-user-id` and `oai-authenticated-user-email`. Private Sites require every visitor to sign in; public Sites may also have anonymous visitors, for whom neither header is present.
-
-The user ID is stable for the same user on the same Site and different across Sites. Email and name are intended for display or contact purposes.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const userId = requestHeaders.get("oai-authenticated-user-id");
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```bash
+npm run dev --workspace server
+npm run dev --workspace client
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+The React app runs at `http://localhost:5173` and the Express API at `http://localhost:8000`.
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+## Authentication API
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+- `POST /api/auth/register` — `{ name, email, password, role }`
+- `POST /api/auth/login` — `{ email, password }`
+- `GET /api/auth/me` — bearer token required
+- `GET /api/dashboard` — bearer token required
+- `GET /api/needs` — public verified needs
+- `GET/PATCH /api/auth/me` — view or update the signed-in profile
+- `GET /api/needs/mine` — the signed-in user's help requests
+- `POST /api/needs` — submit a help request for verification
+- `PATCH/DELETE /api/needs/:id` — edit or cancel an owned request
+- `GET /api/donations` — offers made by the signed-in user
+- `GET /api/donations/received` — offers received for the user's requests
+- `POST /api/donations` — offer help for a verified need
+- `GET /api/notifications` — private account notifications
+- `GET /api/needs/verification-queue` — admin verification queue
+- `PATCH /api/needs/:id/review` — admin approval or rejection
+- `GET /api/admin/*` — admin-only platform management and reports
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+Passwords are hashed with bcrypt and never returned. JWTs expire after seven days. Normal registration permits donor, requester, and community roles; admin accounts must be assigned outside public registration.
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+## Test register and login
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
+1. Start MongoDB and both applications.
+2. Open `http://localhost:5173/register`, select a role, and create an account.
+3. Confirm that the browser opens the protected dashboard.
+4. Select Logout, open `/login`, and sign in with the same email and password.
+5. Confirm that the dashboard loads again.
 
-## Useful Commands
+The home page intentionally shows an empty state until verified needs are stored in MongoDB.
 
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
+## Application routes
 
-## Learn More
+Public visitors can use `/`, `/home`, `/how-it-works`, `/verified-needs`, `/about`, `/safety`, `/privacy`, `/login`, and `/register`.
 
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+Signed-in users can use `/dashboard`, `/profile`, `/available-needs`, `/notifications`, and `/settings`. Requesters and community representatives can use `/my-requests` to submit and track needs. Donors can use `/my-donations` to track their offers and contributions.
+
+Community representative accounts can submit and track community needs. Admin accounts can use `/admin`, `/admin/users`, `/admin/requests`, `/admin/verifications`, and `/admin/reports`. Public registration cannot create admin accounts.
+
+## Workflow
+
+1. A requester or community representative submits a help request. It starts as `Pending Verification`.
+2. An admin approves or rejects it. Only approved requests become public.
+3. A donor offers an item for an approved request.
+4. The requester accepts or declines the offer.
+5. The helper coordinates the handover and marks it complete. Completed quantities update the request automatically.
+
+Only approximate locations are shown in request and offer screens. Passwords, exact addresses, and private contact details are not included in public need responses.

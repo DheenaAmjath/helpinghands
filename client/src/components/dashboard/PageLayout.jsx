@@ -1,0 +1,2 @@
+import DashboardSidebar from './DashboardSidebar.jsx'
+export default function PageLayout({eyebrow='HELPING HANDS',title,description,actions,children}) { return <main className="account-layout"><DashboardSidebar/><section className="account-content"><header className="page-heading"><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1>{description&&<p>{description}</p>}</div>{actions&&<div className="page-actions">{actions}</div>}</header>{children}</section></main> }

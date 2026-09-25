@@ -1,0 +1,2 @@
+import Button from './Button.jsx'
+export default function Modal({title,children,onClose,actions}) { return <div className="modal-backdrop" role="presentation" onMouseDown={onClose}><section className="modal" role="dialog" aria-modal="true" aria-label={title} onMouseDown={event=>event.stopPropagation()}><div className="modal-heading"><h2>{title}</h2><button aria-label="Close" onClick={onClose}>×</button></div>{children}<div className="modal-actions">{actions}<Button className="secondary" type="button" onClick={onClose}>Close</Button></div></section></div> }

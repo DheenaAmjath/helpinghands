@@ -1,0 +1,5 @@
+import { useState } from 'react'
+import PageLayout from '../../components/dashboard/PageLayout.jsx'
+import Button from '../../components/common/Button.jsx'
+import { useAuth } from '../../context/AuthContext.jsx'
+export default function Settings(){const {user,updateProfile}=useAuth();const [enabled,setEnabled]=useState(user.notificationsEnabled!==false);const [saving,setSaving]=useState(false);const [message,setMessage]=useState('');const save=async()=>{setSaving(true);setMessage('');try{await updateProfile({notificationsEnabled:enabled});setMessage('Settings saved.')}finally{setSaving(false)}};return <PageLayout eyebrow="ACCOUNT" title="Settings" description="Manage how Helping Hands keeps you informed."><section className="panel settings-panel">{message&&<div className="message">{message}</div>}<label className="toggle-row"><span><strong>In-app notifications</strong><small>Receive updates about reviews, offers, and handovers.</small></span><input type="checkbox" checked={enabled} onChange={event=>setEnabled(event.target.checked)}/></label><Button onClick={save} disabled={saving}>{saving?'Saving…':'Save settings'}</Button></section></PageLayout>}

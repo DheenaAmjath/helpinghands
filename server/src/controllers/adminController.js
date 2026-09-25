@@ -1,0 +1,10 @@
+import User from '../models/User.js'
+import Need from '../models/Need.js'
+import Donation from '../models/Donation.js'
+import httpError from '../utils/httpError.js'
+
+export async function adminStats(req,res,next){try{const [users,requests,pending,donations,fulfilled]=await Promise.all([User.countDocuments(),Need.countDocuments(),Need.countDocuments({verificationStatus:{$in:['Pending Verification','Under Review']}}),Donation.countDocuments(),Need.countDocuments({verificationStatus:'Fulfilled'})]);res.json({users,requests,pending,donations,fulfilled})}catch(error){next(error)}}
+export async function listUsers(req,res,next){try{const query=req.query.q?.trim();const filter=query?{$or:[{name:{$regex:query,$options:'i'}},{email:{$regex:query,$options:'i'}}]}:{};res.json({users:await User.find(filter).select('name email role active createdAt').sort({createdAt:-1}).limit(200).lean()})}catch(error){next(error)}}
+export async function updateUser(req,res,next){try{const allowed={};if(['donor','requester','community','admin'].includes(req.body.role))allowed.role=req.body.role;if(typeof req.body.active==='boolean')allowed.active=req.body.active;const user=await User.findByIdAndUpdate(req.params.id,allowed,{new:true,runValidators:true}).select('name email role active createdAt');if(!user)throw httpError(404,'User not found.');res.json({user})}catch(error){next(error)}}
+export async function listRequests(req,res,next){try{const filter=req.query.status?{verificationStatus:req.query.status}:{};res.json({needs:await Need.find(filter).select('-supportingProofs.storageKey').populate('submittedBy','name email').populate('reviewedBy','name').sort({createdAt:-1}).limit(200).lean()})}catch(error){next(error)}}
+export async function reports(req,res,next){try{const [requestsByStatus,donationsByStatus,usersByRole]=await Promise.all([Need.aggregate([{$group:{_id:'$verificationStatus',count:{$sum:1}}},{$sort:{count:-1}}]),Donation.aggregate([{$group:{_id:'$status',count:{$sum:1}}},{$sort:{count:-1}}]),User.aggregate([{$group:{_id:'$role',count:{$sum:1}}},{$sort:{count:-1}}])]);res.json({requestsByStatus,donationsByStatus,usersByRole})}catch(error){next(error)}}

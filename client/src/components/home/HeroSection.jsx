@@ -1,0 +1,2 @@
+import { Link } from 'react-router-dom'
+export default function HeroSection() { return <section className="hero"><img src="/og-english.png" alt="Community members sharing a backpack and books"/><div className="hero-panel"><p>Join a trusted community where useful items reach verified needs.</p><div className="actions"><Link className="button" to="/register">Create your account</Link><Link to="/home#how" className="button secondary">Continue as Guest →</Link></div><small>Free donations only · Human verification · Protected personal information</small></div></section> }

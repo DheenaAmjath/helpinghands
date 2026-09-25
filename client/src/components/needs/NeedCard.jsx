@@ -1,0 +1,6 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext.jsx'
+import VerificationBadge from './VerificationBadge.jsx'
+import LoginPromptModal from '../auth/LoginPromptModal.jsx'
+export default function NeedCard({need}) { const progress = Math.min(100,Math.round((need.quantityFulfilled / need.quantityNeeded) * 100)); const {user}=useAuth();const [prompt,setPrompt]=useState(false);return <><article className="need-card"><div className="need-icon">{need.icon || '🎒'}</div><div className="need-content"><div className="need-title"><h3>{need.title}</h3><VerificationBadge status={need.verificationStatus}/></div><p>{need.description}</p><small>{need.location} · {need.category} · {need.urgency}</small><div className="progress-label"><span>{need.quantityFulfilled} of {need.quantityNeeded} fulfilled</span><strong>{progress}%</strong></div><div className="progress"><i style={{width:`${progress}%`}}/></div>{user?<Link className="text-button" to={`/available-needs/${need._id}`}>{user.role==='donor'?'Help this need →':'View need →'}</Link>:<button className="text-button" onClick={()=>setPrompt(true)}>Help this need →</button>}</div></article>{prompt&&<LoginPromptModal onClose={()=>setPrompt(false)}/>}</> }
